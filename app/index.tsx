@@ -1,14 +1,83 @@
 import { Image } from "expo-image";
-import { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from "react";
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ShadowView } from 'react-native-inner-shadow';
+
+type TabKey = 'home' | 'yolo' | 'genie';
 
 export default function HomeScreen() {
     const [isCardVisible, setIsCardVisible] = useState(true);
+    const [selectedTab, setSelectedTab] = useState<TabKey>('yolo');
 
     const toggleCardVisibility = () => {
         setIsCardVisible(prev => !prev);
     };
+
+    const scaleValues: Record<TabKey, Animated.Value> = {
+        home: useRef(new Animated.Value(1)).current,
+        yolo: useRef(new Animated.Value(1)).current,
+        genie: useRef(new Animated.Value(1)).current,
+    };
+
+    const animateTab = (tab: TabKey) => {
+        (Object.keys(scaleValues) as TabKey[]).forEach((key) => {
+            Animated.timing(scaleValues[key], {
+                toValue: key === tab ? 1.2 : 1,
+                duration: 200,
+                useNativeDriver: true,
+            }).start();
+        });
+    };
+
+    const handlePress = (tab: TabKey) => {
+        setSelectedTab(tab);
+        animateTab(tab);
+    };
+
+    useEffect(() => {
+        animateTab(selectedTab);
+    });
+
+    const renderTab = (
+        tabKey: TabKey,
+        image: any,
+        label: string,
+        isQRCode?: boolean
+    ) => (
+        <View style={styles.tabContainer}>
+            <TouchableOpacity
+                style={isQRCode ? styles.qrcodebutton : styles.geniebutton}
+                onPress={() => handlePress(tabKey)}
+            >
+                <Animated.View
+                    style={[
+                        isQRCode ? styles.innerqrcodebutton : styles.innergeniebutton,
+                        { transform: [{ scale: scaleValues[tabKey] }] },
+                    ]}
+                >
+                    <Image
+                        source={image}
+                        style={{
+                            width: 20,
+                            height: 20,
+                            alignSelf: 'center',
+                            opacity: selectedTab === tabKey ? 1 : 0.3,
+                        }}
+                    />
+                </Animated.View>
+            </TouchableOpacity>
+            <Text
+                style={
+                    selectedTab === tabKey
+                        ? styles.bottomContainertext
+                        : styles.bottomContainertext2
+                }
+            >
+                {label}
+            </Text>
+        </View>
+    );
+
 
     return (
         <View style={styles.container}>
@@ -101,49 +170,16 @@ export default function HomeScreen() {
                 </TouchableOpacity>
             </View>
 
-
             <View style={styles.bottomContainer}>
                 <Image
                     source={require('../assets/images/Rectangle.png')}
                     style={{ width: 360, height: 32, opacity: .8 }}
                 />
+
                 <View style={styles.rightContainer}>
-
-                    <View style={{ flexDirection: "column", alignItems: "center", alignSelf: "center" }}>
-                        <TouchableOpacity style={styles.geniebutton}>
-                            <View style={styles.innergeniebutton}>
-                                <Image
-                                    source={require('../assets/images/home.png')}
-                                    style={{ width: 20, height: 20, alignSelf: "center", opacity: .3, justifyContent: "center" }}
-                                />
-                            </View>
-                        </TouchableOpacity>
-                        <Text style={styles.bottomContainertext2}>home</Text>
-                    </View>
-
-                    <View style={{ flexDirection: "column", alignItems: "center", alignSelf: "center" }}>
-                        <TouchableOpacity style={styles.qrcodebutton}>
-                            <View style={styles.innerqrcodebutton}>
-                                <Image
-                                    source={require('../assets/images/qrcode.png')}
-                                    style={{ width: 20, height: 20, alignSelf: "center" }}
-                                />
-                            </View>
-                        </TouchableOpacity>
-                        <Text style={styles.bottomContainertext}>yolo pay</Text>
-                    </View>
-
-                    <View style={{ flexDirection: "column", alignItems: "center", alignSelf: "center" }}>
-                        <TouchableOpacity style={styles.geniebutton}>
-                            <View style={styles.innergeniebutton}>
-                                <Image
-                                    source={require('../assets/images/genielogo.png')}
-                                    style={{ width: 20, height: 20, alignSelf: "center", opacity: .3, justifyContent: "center" }}
-                                />
-                            </View>
-                        </TouchableOpacity>
-                        <Text style={styles.bottomContainertext2}>genie</Text>
-                    </View>
+                    {renderTab('home', require('../assets/images/home.png'), 'home')}
+                    {renderTab('yolo', require('../assets/images/qrcode.png'), 'yolo pay')}
+                    {renderTab('genie', require('../assets/images/genielogo.png'), 'genie')}
                 </View>
             </View>
         </View>
@@ -329,11 +365,11 @@ const styles = StyleSheet.create({
         marginLeft: .5,
         justifyContent: "center",
         alignSelf: "center",
-        backgroundColor: "black",
+        borderColor: "gray",
         borderRadius: 50,
     },
     bottomContainertext: {
-        fontSize: 12,
+        fontSize: 14,
         color: "white",
         fontFamily: "Poppins-Medium",
         fontWeight: "500",
@@ -384,5 +420,10 @@ const styles = StyleSheet.create({
         alignSelf: "center",
         backgroundColor: "black",
         borderRadius: 50,
-    }
+    },
+    tabContainer: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        alignSelf: 'center',
+    },
 });
